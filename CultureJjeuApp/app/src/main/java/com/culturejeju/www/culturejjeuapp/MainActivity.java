@@ -1,19 +1,21 @@
 package com.culturejeju.www.culturejjeuapp;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
-import android.webkit.URLUtil;
+import android.os.Message;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import java.util.logging.Logger;
+
 import static android.provider.ContactsContract.CommonDataKinds.Website.URL;
+import static android.support.constraint.Constraints.TAG;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -35,6 +37,7 @@ public class MainActivity extends Activity {
 
         webView = (WebView) findViewById(R.id.webView);
         webView.setWebViewClient(new WebViewClient() {
+            @SuppressLint("MissingPermission")
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.startsWith(INTENT_PROTOCOL_START)) {
@@ -55,14 +58,35 @@ public class MainActivity extends Activity {
                         }
                         return true;
                     }
+                }else if (url.indexOf("tel:") > -1) {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                    return true;
                 } else {
                     return false;
                 }
             }
 
         });
+
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
+        settings.setSupportMultipleWindows(true);
+
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onCreateWindow(WebView view, boolean dialog, boolean userGesture, Message resultMsg)
+            {
+                WebView newWebView = new WebView(MainActivity.this);
+                view.addView(newWebView);
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(newWebView);
+                resultMsg.sendToTarget();
+                return true;
+            }
+        });
+
         webView.loadUrl("http://www.culturejeju.com/");
 
     }
